@@ -7,22 +7,21 @@ on:
     branches: [ master ]
 
 jobs:
-  test:
+  python:
+    name: Python Tests and Linting
     runs-on: ubuntu-latest
     steps:
-      #----------------------------------------------
-      #       check-out repo and set-up python
-      #----------------------------------------------
+      # Check out repository and set up Python
       - name: Check out repository
         uses: actions/checkout@v4
+
       - name: Set up python
         id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      #----------------------------------------------
-      #  -----  install & configure poetry  -----
-      #----------------------------------------------
+
+      # Install and configure Poetry
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
@@ -31,44 +30,52 @@ jobs:
           virtualenvs-path: .venv
           installer-parallel: true
 
-      #----------------------------------------------
-      #       load cached venv if cache exists
-      #----------------------------------------------
+      # Load cached virtual environment
       - name: Load cached venv
         id: cached-poetry-dependencies
         uses: actions/cache@v4
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-      #----------------------------------------------
-      # install dependencies if cache does not exist
-      #----------------------------------------------
+
+      # Install dependencies if cache is not found
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root
 
+      # Install project
       - name: Install project
         run: poetry install --no-interaction
 
+      # Run tests
       - name: Run tests
         run: poetry run pytest --cov=django_notipus
 
+      # Run Python linting
       - name: Run linting
         run: |
           poetry run ruff check .
           poetry run ruff format --check .
 
-      #----------------------------------------------
-      #       check TypeScript with ESLint
-      #----------------------------------------------
+  typescript:
+    name: TypeScript Linting
+    runs-on: ubuntu-latest
+    steps:
+      # Check out repository
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      # Set up Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
+      # Install dependencies for TypeScript linting
       - name: Install dependencies for TypeScript linting
         run: |
           npm install --global eslint typescript @typescript-eslint/parser @typescript-eslint/eslint-plugin
 
+      # Run TypeScript linting
       - name: Run TypeScript linting
-        run: eslint '**/*.ts' --max-warnings=0
+        run: eslint --max-warnings=0
